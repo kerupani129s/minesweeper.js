@@ -79,7 +79,23 @@
 
 		open(row, column) {
 
+			if ( ! this._field[row][column].cell.visible ) return;
+
 			this._field[row][column].cell.visible = false;
+
+			// 
+			if ( this._field[row][column].count === 0 ) {
+
+				for (let r = -1; r <= 1; r++) {
+					if ( row + r < 0 || this._row <= row + r ) continue;
+					for (let c = -1; c <= 1; c++) {
+						if ( column + c < 0 || this._column <= column + c ) continue;
+						if ( r == 0 && c == 0 ) continue;
+						this.open(row + r, column + c);
+					}
+				}
+
+			}
 
 		}
 
