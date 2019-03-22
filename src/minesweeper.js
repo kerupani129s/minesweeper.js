@@ -128,17 +128,25 @@
 
 		_create(row, column) {
 
-			const numbers = [...Array(this._row * this._column).keys()];
+			const getCellOf = index => {
+
+				const column = index % this._column;
+				const row = (index - column) / this._column;
+
+				return [row, column];
+
+			};
+
+			const indices = [...Array(this._row * this._column).keys()];
 
 			// 爆弾をばらまく
-			numbers.splice(row * this._column + column, 1);
+			indices.splice(row * this._column + column, 1);
 
 			for (let i = 0; i < this._mine; i++) {
 
-				const cell = numbers.splice(Math.floor(Math.random() * numbers.length), 1);
-
-				const column = cell % this._column;
-				const row = (cell - column) / this._column;
+				// Note: row, column を別々に乱数にすると確率が偏る
+				const index = indices.splice(Math.floor(Math.random() * indices.length), 1)[0];
+				const [row, column] = getCellOf(index);
 
 				this._field[row][column].text.text = '●';
 				this._field[row][column].mine = true;
@@ -146,12 +154,11 @@
 			}
 
 			// 爆弾数表示
-			numbers.push(row * this._column + column);
+			indices.push(row * this._column + column);
 
-			numbers.forEach(cell => {
+			indices.forEach(index => {
 
-				const column = cell % this._column;
-				const row = (cell - column) / this._column;
+				const [row, column] = getCellOf(index);
 
 				const count = this._getNeighbours(row, column)
 					.filter(([newRow, newColumn]) => this._field[newRow][newColumn].mine).length;
