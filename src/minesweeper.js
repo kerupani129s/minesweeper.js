@@ -1,5 +1,65 @@
 (() => {
 
+	const Cell = class {
+
+		constructor(background, row, column, width, height, textStyle) {
+
+			this._cellWidth = width;
+			this._cellHeight = height;
+
+			this._open = false;
+
+			// 
+			this._text = new PIXI.Text('', textStyle);
+
+			this._text.anchor.set(0.5);
+
+			this._text.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
+
+			background.addChild(this._text);
+
+			// 
+			this._cell = new PIXI.Graphics();
+
+			this._cell.beginFill(0xe0e0e0);
+			this._cell.drawRect(- this._cellWidth * 0.45, - this._cellHeight * 0.45, this._cellWidth * 0.9, this._cellHeight * 0.9);
+			this._cell.endFill();
+
+			this._cell.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
+
+			background.addChild(this._cell);
+
+		}
+
+		set open(_open) {
+			this._open = _open;
+			this._cell.visible = ! _open;
+		}
+
+		get open() {
+			return this._open;
+		}
+
+		set count(_count) {
+			this._count = _count;
+			this._text.text = _count ? '' + _count : '';
+		}
+
+		get count() {
+			return this._count;
+		}
+
+		set mine(_mine) {
+			this._mine = _mine;
+			this._text.text = _mine ? '●' : '';
+		}
+
+		get mine() {
+			return this._mine;
+		}
+
+	};
+
 	window.Minesweeper = class {
 
 		constructor(element) {
@@ -34,57 +94,28 @@
 			this._app.stage.addChild(background);
 
 			// 
-			this._field = [];
-
 			const textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._cellHeight, fill: 0xe0e0e0});
 
+			this._field = [];
+
 			for (let row = 0; row < this._row; row++) {
-
 				this._field[row] = [];
-
 				for (let column = 0; column < this._column; column++) {
-
-					this._field[row][column] = {};
-
-					// 
-					const text = new PIXI.Text('', textStyle);
-
-					text.anchor.set(0.5);
-
-					text.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
-
-					this._field[row][column].text = text;
-
-					this._app.stage.addChild(text);
-
-					// 
-					const cell = new PIXI.Graphics();
-
-					cell.beginFill(0xe0e0e0);
-					cell.drawRect(- this._cellWidth * 0.45, - this._cellHeight * 0.45, this._cellWidth * 0.9, this._cellHeight * 0.9);
-					cell.endFill();
-
-					cell.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
-
-					this._field[row][column].cell = cell;
-
-					background.addChild(cell);
-
-
+					this._field[row][column] = new Cell(background, row, column, this._cellWidth, this._cellHeight, textStyle);
 				}
-
 			}
 
 		}
 
 		open(row, column) {
 
-			if ( ! this._field[row][column].cell.visible ) return;
+			const cell = this._field[row][column];
 
-			this._field[row][column].cell.visible = false;
+			if ( cell.open ) return;
+			cell.open = true;
 
 			// 
-			if ( this._field[row][column].count === 0 ) {
+			if ( cell.count === 0 ) {
 				this._getNeighbours(row, column).forEach(([newRow, newColumn]) => {
 					this.open(newRow, newColumn);
 				});
@@ -148,7 +179,6 @@
 				const index = indices.splice(Math.floor(Math.random() * indices.length), 1)[0];
 				const [row, column] = getCellOf(index);
 
-				this._field[row][column].text.text = '●';
 				this._field[row][column].mine = true;
 
 			}
@@ -163,7 +193,6 @@
 				const count = this._getNeighbours(row, column)
 					.filter(([newRow, newColumn]) => this._field[newRow][newColumn].mine).length;
 
-				this._field[row][column].text.text = count ? '' + count : '';
 				this._field[row][column].count = count;
 
 			});
