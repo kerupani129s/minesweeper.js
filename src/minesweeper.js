@@ -77,6 +77,12 @@
 
 		}
 
+		open(row, column) {
+
+			this._field[row][column].tile.visible = false;
+
+		}
+
 		get _tileWidth() {
 			return this._width / this._column;
 		}
@@ -90,12 +96,14 @@
 			const position = event.data.getLocalPosition(event.currentTarget);
 			const [row, column] = [Math.floor(position.y / this._tileHeight), Math.floor(position.x / this._tileWidth)];
 
+			// 作る
 			if ( ! this._started ) {
 				this._create(row, column);
 				this._started = true;
 			}
 
-			this._field[row][column].tile.visible = false;
+			// 開く
+			this.open(row, column);
 
 		}
 
