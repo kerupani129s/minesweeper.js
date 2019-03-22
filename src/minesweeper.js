@@ -36,7 +36,7 @@
 			// 
 			this._field = [];
 
-			const textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._tileHeight, fill: 0xe0e0e0});
+			const textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._cellHeight, fill: 0xe0e0e0});
 
 			for (let row = 0; row < this._row; row++) {
 
@@ -51,24 +51,24 @@
 
 					text.anchor.set(0.5);
 
-					text.position.set(this._tileWidth * (column + 0.5), this._tileHeight * (row + 0.5));
+					text.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
 
 					this._field[row][column].text = text;
 
 					this._app.stage.addChild(text);
 
 					// 
-					const tile = new PIXI.Graphics();
+					const cell = new PIXI.Graphics();
 
-					tile.beginFill(0xe0e0e0);
-					tile.drawRect(- this._tileWidth * 0.45, - this._tileHeight * 0.45, this._tileWidth * 0.9, this._tileHeight * 0.9);
-					tile.endFill();
+					cell.beginFill(0xe0e0e0);
+					cell.drawRect(- this._cellWidth * 0.45, - this._cellHeight * 0.45, this._cellWidth * 0.9, this._cellHeight * 0.9);
+					cell.endFill();
 
-					tile.position.set(this._tileWidth * (column + 0.5), this._tileHeight * (row + 0.5));
+					cell.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
 
-					this._field[row][column].tile = tile;
+					this._field[row][column].cell = cell;
 
-					background.addChild(tile);
+					background.addChild(cell);
 
 
 				}
@@ -79,22 +79,22 @@
 
 		open(row, column) {
 
-			this._field[row][column].tile.visible = false;
+			this._field[row][column].cell.visible = false;
 
 		}
 
-		get _tileWidth() {
+		get _cellWidth() {
 			return this._width / this._column;
 		}
 
-		get _tileHeight() {
+		get _cellHeight() {
 			return this._height / this._row;
 		}
 
 		_pointerTapped(event) {
 
 			const position = event.data.getLocalPosition(event.currentTarget);
-			const [row, column] = [Math.floor(position.y / this._tileHeight), Math.floor(position.x / this._tileWidth)];
+			const [row, column] = [Math.floor(position.y / this._cellHeight), Math.floor(position.x / this._cellWidth)];
 
 			// 作る
 			if ( ! this._started ) {
