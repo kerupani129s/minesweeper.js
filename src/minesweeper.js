@@ -122,6 +122,7 @@
 				const row = (cell - column) / this._column;
 
 				this._field[row][column].text.text = '●';
+				this._field[row][column].mine = true;
 
 			}
 
@@ -139,11 +140,12 @@
 					if ( row + r < 0 || this._row <= row + r ) continue;
 					for (let c = -1; c <= 1; c++) {
 						if ( column + c < 0 || this._column <= column + c ) continue;
-						if ( this._field[row + r][column + c].text.text === '●' ) count++;
+						if ( this._field[row + r][column + c].mine ) count++;
 					}
 				}
 
 				this._field[row][column].text.text = count ? '' + count : '';
+				this._field[row][column].count = count;
 
 			});
 
