@@ -85,16 +85,9 @@
 
 			// 
 			if ( this._field[row][column].count === 0 ) {
-
-				for (let r = -1; r <= 1; r++) {
-					if ( row + r < 0 || this._row <= row + r ) continue;
-					for (let c = -1; c <= 1; c++) {
-						if ( column + c < 0 || this._column <= column + c ) continue;
-						if ( r == 0 && c == 0 ) continue;
-						this.open(row + r, column + c);
-					}
-				}
-
+				this._getNeighbours(row, column).forEach(([newRow, newColumn]) => {
+					this.open(newRow, newColumn);
+				});
 			}
 
 		}
@@ -105,6 +98,16 @@
 
 		get _cellHeight() {
 			return this._height / this._row;
+		}
+
+		_getNeighbours(row, column) {
+
+			const offsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+
+			return offsets
+				.map(([r, c]) => [row + r, column + c])
+				.filter(([newRow, newColumn]) => 0 <= newRow && newRow < this._row && 0 <= newColumn && newColumn < this._column);
+
 		}
 
 		_pointerTapped(event) {
@@ -150,15 +153,8 @@
 				const column = cell % this._column;
 				const row = (cell - column) / this._column;
 
-				let count = 0;
-
-				for (let r = -1; r <= 1; r++) {
-					if ( row + r < 0 || this._row <= row + r ) continue;
-					for (let c = -1; c <= 1; c++) {
-						if ( column + c < 0 || this._column <= column + c ) continue;
-						if ( this._field[row + r][column + c].mine ) count++;
-					}
-				}
+				const count = this._getNeighbours(row, column)
+					.filter(([newRow, newColumn]) => this._field[newRow][newColumn].mine).length;
 
 				this._field[row][column].text.text = count ? '' + count : '';
 				this._field[row][column].count = count;
