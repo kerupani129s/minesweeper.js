@@ -121,12 +121,21 @@
 			this._width = 1600;
 			this._height = 1600;
 
+			this._displayObjects = {};
+
 			// 
 			this._app = new PIXI.Application({width: this._width, height: this._height});
 
 			element.appendChild(this._app.view);
 
 			// 
+			this._createDisplayObjects();
+
+		}
+
+		_createDisplayObjects() {
+
+			// 背景
 			const background = new PIXI.Graphics();
 
 			background.beginFill(0xffffff);
@@ -138,6 +147,27 @@
 			background.on('pointertap', event => this._pointerTapped(event));
 
 			this._app.stage.addChild(background);
+			this._displayObjects.background = background;
+
+			// リザルト
+			const result = new PIXI.Graphics();
+
+			result.beginFill(0xffffff, 0.5);
+			result.drawRect(0, 0, this._width, this._height);
+			result.endFill();
+
+			result.visible = false;
+
+			this._app.stage.addChild(result);
+			this._displayObjects.result = result;
+
+			const textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._height * 0.13, fontStyle: 'italic', fontWeight: 'bold', fill: 0xffffff, strokeThickness: this._height * 0.018, stroke: 0xe0e0e0});
+			const resultTitle = new PIXI.Text('OUT!!!', textStyle);
+
+			resultTitle.anchor.set(0.5);
+			resultTitle.position.set(this._width * 0.5, this._height * 0.3);
+
+			result.addChild(resultTitle);
 
 		}
 
@@ -151,9 +181,10 @@
 			this._textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._cellHeight, fill: 0xe0e0e0});
 
 			// 
-			this._cells = [];
+			this._displayObjects.cells = [];
+			const cells = this._displayObjects.cells;
 			for (let row = 0; row < data.row; row++) {
-				this._cells[row] = [];
+				cells[row] = [];
 				for (let column = 0; column < data.column; column++) {
 					this._createCell(row, column);
 				}
@@ -163,26 +194,37 @@
 
 		_pointerTapped(event) {
 
+			if ( this._finished ) return;
+
+			// 
 			const position = event.data.getLocalPosition(event.currentTarget);
 
 			const startRow = Math.floor(position.y / this._cellHeight);
 			const startColumn = Math.floor(position.x / this._cellWidth);
 
-			// 作る
+			// 最初のタップ時にフィールド生成
 			if ( ! this._field.created ) {
 				this._field.create(startRow, startColumn, (row, column) => {
 					this._updateCell(row, column);
 				});
 			}
 
-			// 開く
+			// セルを開く
 			this._field.reveal(startRow, startColumn, (row, column) => {
 				this._updateCellRevealed(row, column);
 			});
 
+			// ゲームオーバー判定
+			if ( this._field.isMine(startRow, startColumn) ) {
+				this._displayObjects.result.visible = true;
+				this._finished = true;
+			}
+
 		}
 
 		_createCell(row, column) {
+
+			const background = this._displayObjects.background;
 
 			// 
 			const text = new PIXI.Text('', this._textStyle);
@@ -191,7 +233,7 @@
 
 			text.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
 
-			this._app.stage.addChild(text);
+			background.addChild(text);
 
 			// 
 			const cell = new PIXI.Graphics();
@@ -202,27 +244,30 @@
 
 			cell.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
 
-			this._app.stage.addChild(cell);
+			background.addChild(cell);
 
 			// 
-			this._cells[row][column] = {text, cell};
+			this._displayObjects.cells[row][column] = {text, cell};
 
 		}
 
 		_updateCell(row, column) {
 
+			const cells = this._displayObjects.cells;
+
 			if ( this._field.isMine(row, column) ) {
-				this._cells[row][column].text.text = '●';
+				cells[row][column].text.text = '●';
 			} else if ( this._field.count(row, column) > 0 ) {
-				this._cells[row][column].text.text = '' + this._field.count(row, column);
+				cells[row][column].text.text = '' + this._field.count(row, column);
 			} else {
-				this._cells[row][column].text.text = '';
+				cells[row][column].text.text = '';
 			}
 
 		}
 
 		_updateCellRevealed(row, column) {
-			this._cells[row][column].cell.visible = ! this._field.revealed(row, column);
+			const cells = this._displayObjects.cells;
+			cells[row][column].cell.visible = ! this._field.revealed(row, column);
 		}
 
 	};
