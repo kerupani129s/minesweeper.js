@@ -1,61 +1,114 @@
 (() => {
 
-	const Cell = class {
+	const Field = class {
 
-		constructor(background, row, column, width, height, textStyle) {
+		constructor(row, column, mine) {
 
-			this._cellWidth = width;
-			this._cellHeight = height;
+			this._row = row;
+			this._column = column;
+			this._mine = mine;
 
-			this._open = false;
+		}
+
+		_getCellOf(index) {
+
+			const column = index % this._column;
+			const row = (index - column) / this._column;
+
+			return [row, column];
+
+		}
+
+		_getNeighbours(row, column) {
+
+			const offsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+
+			return offsets
+				.map(([r, c]) => [row + r, column + c])
+				.filter(([newRow, newColumn]) => 0 <= newRow && newRow < this._row && 0 <= newColumn && newColumn < this._column);
+
+		}
+
+		create(startRow, startColumn, callback = () => {}) {
+
+			this._state = [];
+			for (let row = 0; row < this._row; row++) {
+				this._state[row] = [];
+				for (let column = 0; column < this._column; column++) {
+					this._state[row][column] = {};
+				}
+			}
 
 			// 
-			this._text = new PIXI.Text('', textStyle);
+			const indices = [...Array(this._row * this._column).keys()];
 
-			this._text.anchor.set(0.5);
+			// 爆弾をばらまく
+			indices.splice(startRow * this._column + startColumn, 1);
 
-			this._text.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
+			for (let i = 0; i < this._mine; i++) {
 
-			background.addChild(this._text);
+				// Note: row, column を別々に乱数にすると確率が偏る
+				const index = indices.splice(Math.floor(Math.random() * indices.length), 1)[0];
+				const [row, column] = this._getCellOf(index);
+
+				this._state[row][column].mine = true;
+
+			}
+
+			// 爆弾数計算
+			indices.push(startRow * this._column + startColumn);
+
+			indices.forEach(index => {
+
+				const [row, column] = this._getCellOf(index);
+
+				const count = this._getNeighbours(row, column)
+					.filter(([newRow, newColumn]) => this._state[newRow][newColumn].mine).length;
+
+				this._state[row][column].count = count;
+
+			});
 
 			// 
-			this._cell = new PIXI.Graphics();
-
-			this._cell.beginFill(0xe0e0e0);
-			this._cell.drawRect(- this._cellWidth * 0.45, - this._cellHeight * 0.45, this._cellWidth * 0.9, this._cellHeight * 0.9);
-			this._cell.endFill();
-
-			this._cell.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
-
-			background.addChild(this._cell);
+			for (let row = 0; row < this._row; row++) {
+				for (let column = 0; column < this._column; column++) {
+					callback(row, column);
+				}
+			}
 
 		}
 
-		set open(_open) {
-			this._open = _open;
-			this._cell.visible = ! _open;
+		reveal(row, column, callback = () => {}) {
+
+			const cell = this._state[row][column];
+
+			if ( cell.revealed ) return;
+			cell.revealed = true;
+			callback(row, column);
+
+			// 
+			if ( cell.count === 0 ) {
+				this._getNeighbours(row, column).forEach(([newRow, newColumn]) => {
+					this.reveal(newRow, newColumn, callback);
+				});
+			}
+
 		}
 
-		get open() {
-			return this._open;
+		revealed(row, column) {
+			return this._state[row][column].revealed;
 		}
 
-		set count(_count) {
-			this._count = _count;
-			this._text.text = _count ? '' + _count : '';
+		isMine(row, column) {
+			return this._state[row][column].mine;
 		}
 
-		get count() {
-			return this._count;
+		count(row, column) {
+			return this._state[row][column].count;
 		}
 
-		set mine(_mine) {
-			this._mine = _mine;
-			this._text.text = _mine ? '●' : '';
-		}
-
-		get mine() {
-			return this._mine;
+		get created() {
+			return Boolean(this._state);
 		}
 
 	};
@@ -72,14 +125,6 @@
 
 			element.appendChild(this._app.view);
 
-		}
-
-		stage(data) {
-
-			this._row = data.row;
-			this._column = data.column;
-			this._mine = data.mine;
-
 			// 
 			const background = new PIXI.Graphics();
 
@@ -93,110 +138,90 @@
 
 			this._app.stage.addChild(background);
 
+		}
+
+		setStage(data) {
+
+			this._field = new Field(data.row, data.column, data.mine);
+
+			this._cellWidth = this._width / data.column;
+			this._cellHeight = this._height / data.row;
+
+			this._textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._cellHeight, fill: 0xe0e0e0});
+
 			// 
-			const textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._cellHeight, fill: 0xe0e0e0});
-
-			this._field = [];
-
-			for (let row = 0; row < this._row; row++) {
-				this._field[row] = [];
-				for (let column = 0; column < this._column; column++) {
-					this._field[row][column] = new Cell(background, row, column, this._cellWidth, this._cellHeight, textStyle);
+			this._cells = [];
+			for (let row = 0; row < data.row; row++) {
+				this._cells[row] = [];
+				for (let column = 0; column < data.column; column++) {
+					this._createCell(row, column);
 				}
 			}
-
-		}
-
-		open(row, column) {
-
-			const cell = this._field[row][column];
-
-			if ( cell.open ) return;
-			cell.open = true;
-
-			// 
-			if ( cell.count === 0 ) {
-				this._getNeighbours(row, column).forEach(([newRow, newColumn]) => {
-					this.open(newRow, newColumn);
-				});
-			}
-
-		}
-
-		get _cellWidth() {
-			return this._width / this._column;
-		}
-
-		get _cellHeight() {
-			return this._height / this._row;
-		}
-
-		_getNeighbours(row, column) {
-
-			const offsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
-
-			return offsets
-				.map(([r, c]) => [row + r, column + c])
-				.filter(([newRow, newColumn]) => 0 <= newRow && newRow < this._row && 0 <= newColumn && newColumn < this._column);
 
 		}
 
 		_pointerTapped(event) {
 
 			const position = event.data.getLocalPosition(event.currentTarget);
-			const [row, column] = [Math.floor(position.y / this._cellHeight), Math.floor(position.x / this._cellWidth)];
+
+			const startRow = Math.floor(position.y / this._cellHeight);
+			const startColumn = Math.floor(position.x / this._cellWidth);
 
 			// 作る
-			if ( ! this._started ) {
-				this._create(row, column);
-				this._started = true;
+			if ( ! this._field.created ) {
+				this._field.create(startRow, startColumn, (row, column) => {
+					this._updateCell(row, column);
+				});
 			}
 
 			// 開く
-			this.open(row, column);
+			this._field.reveal(startRow, startColumn, (row, column) => {
+				this._updateCellRevealed(row, column);
+			});
 
 		}
 
-		_create(row, column) {
+		_createCell(row, column) {
 
-			const getCellOf = index => {
+			// 
+			const text = new PIXI.Text('', this._textStyle);
 
-				const column = index % this._column;
-				const row = (index - column) / this._column;
+			text.anchor.set(0.5);
 
-				return [row, column];
+			text.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
 
-			};
+			this._app.stage.addChild(text);
 
-			const indices = [...Array(this._row * this._column).keys()];
+			// 
+			const cell = new PIXI.Graphics();
 
-			// 爆弾をばらまく
-			indices.splice(row * this._column + column, 1);
+			cell.beginFill(0xe0e0e0);
+			cell.drawRect(- this._cellWidth * 0.45, - this._cellHeight * 0.45, this._cellWidth * 0.9, this._cellHeight * 0.9);
+			cell.endFill();
 
-			for (let i = 0; i < this._mine; i++) {
+			cell.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
 
-				// Note: row, column を別々に乱数にすると確率が偏る
-				const index = indices.splice(Math.floor(Math.random() * indices.length), 1)[0];
-				const [row, column] = getCellOf(index);
+			this._app.stage.addChild(cell);
 
-				this._field[row][column].mine = true;
+			// 
+			this._cells[row][column] = {text, cell};
 
+		}
+
+		_updateCell(row, column) {
+
+			if ( this._field.isMine(row, column) ) {
+				this._cells[row][column].text.text = '●';
+			} else if ( this._field.count(row, column) > 0 ) {
+				this._cells[row][column].text.text = '' + this._field.count(row, column);
+			} else {
+				this._cells[row][column].text.text = '';
 			}
 
-			// 爆弾数表示
-			indices.push(row * this._column + column);
+		}
 
-			indices.forEach(index => {
-
-				const [row, column] = getCellOf(index);
-
-				const count = this._getNeighbours(row, column)
-					.filter(([newRow, newColumn]) => this._field[newRow][newColumn].mine).length;
-
-				this._field[row][column].count = count;
-
-			});
-
+		_updateCellRevealed(row, column) {
+			this._cells[row][column].cell.visible = ! this._field.revealed(row, column);
 		}
 
 	};
