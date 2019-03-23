@@ -8,6 +8,9 @@
 			this._column = column;
 			this._mine = mine;
 
+			// 
+			this._neighbourOffsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+
 		}
 
 		_getCellOf(index) {
@@ -21,9 +24,7 @@
 
 		_getNeighbours(row, column) {
 
-			const offsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
-
-			return offsets
+			return this._neighbourOffsets
 				.map(([r, c]) => [row + r, column + c])
 				.filter(([newRow, newColumn]) => 0 <= newRow && newRow < this._row && 0 <= newColumn && newColumn < this._column);
 
