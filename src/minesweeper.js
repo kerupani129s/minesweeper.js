@@ -8,6 +8,8 @@
 			this._column = column;
 			this._mine = mine;
 
+			this._clearedCount = this._row * this._column - this._mine;
+
 			// 
 			this._neighbourOffsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
 
@@ -39,6 +41,8 @@
 					this._state[row][column] = {};
 				}
 			}
+
+			this._revealedCount = 0;
 
 			// 
 			const indices = [...Array(this._row * this._column).keys()];
@@ -85,9 +89,12 @@
 
 			if ( cell.revealed ) return;
 			cell.revealed = true;
+			this._revealedCount++;
+
 			callback(row, column);
 
 			// 
+			// Note: 爆弾の時は false
 			if ( cell.count === 0 ) {
 				this._getNeighbours(row, column).forEach(([newRow, newColumn]) => {
 					this.reveal(newRow, newColumn, callback);
@@ -110,6 +117,12 @@
 
 		get created() {
 			return Boolean(this._state);
+		}
+
+		get cleared() {
+			// Note: ゲームオーバーになっていない前提
+			// Note: this._state を探索して個数を調べたり条件に合うか調べたりしても良いけれど、こちらの方が処理が速くメモリ消費も少ない
+			return this._revealedCount === this._clearedCount;
 		}
 
 	};
@@ -162,12 +175,13 @@
 			this._displayObjects.result = result;
 
 			const textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._height * 0.13, fontStyle: 'italic', fontWeight: 'bold', fill: 0xffffff, strokeThickness: this._height * 0.018, stroke: 0xe0e0e0});
-			const resultTitle = new PIXI.Text('OUT!!!', textStyle);
+			const resultTitle = new PIXI.Text('', textStyle);
 
 			resultTitle.anchor.set(0.5);
 			resultTitle.position.set(this._width * 0.5, this._height * 0.3);
 
 			result.addChild(resultTitle);
+			this._displayObjects.resultTitle = resultTitle;
 
 		}
 
@@ -216,8 +230,18 @@
 
 			// ゲームオーバー判定
 			if ( this._field.isMine(startRow, startColumn) ) {
+				this._displayObjects.resultTitle.text = 'OUT!!!';
 				this._displayObjects.result.visible = true;
 				this._finished = true;
+				return;
+			}
+
+			// クリア判定
+			if ( this._field.cleared ) {
+				this._displayObjects.resultTitle.text = 'CLEAR!!';
+				this._displayObjects.result.visible = true;
+				this._finished = true;
+				return;
 			}
 
 		}
