@@ -265,11 +265,6 @@
 				});
 			}
 
-			// セルを開く
-			this._field.reveal(startRow, startColumn, (row, column) => {
-				this._updateCellRevealed(row, column);
-			});
-
 			// ゲームオーバー判定
 			if ( this._field.isMine(startRow, startColumn) ) {
 				this._displayObjects.resultTitle.text = 'OUT!!!';
@@ -277,6 +272,11 @@
 				this._finished = true;
 				return;
 			}
+
+			// セルを開く
+			this._field.reveal(startRow, startColumn, (row, column) => {
+				this._updateCellRevealed(row, column);
+			});
 
 			// クリア判定
 			if ( this._field.cleared ) {
