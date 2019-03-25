@@ -192,36 +192,15 @@
 			this._cellWidth = this._width / data.column;
 			this._cellHeight = this._height / data.row;
 
-			this._textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._cellHeight, fill: 0xe0e0e0});
-
-			// 
+			// アフター画像
 			const textureAfter = PIXI.Texture.from(data.after);
 			const spriteAfter = new PIXI.Sprite(textureAfter);
 
 			this._displayObjects.background.addChild(spriteAfter);
 
-			// 
-			const textureBefore = PIXI.Texture.from(data.before);
-			const spriteBefore = new PIXI.Sprite(textureBefore);
+			// 爆弾数・爆弾表示
+			const textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._cellHeight, fill: 0xe0e0e0});
 
-			const renderTexture = PIXI.RenderTexture.create(this._width, this._height);
-			const renderTextureSprite = new PIXI.Sprite(renderTexture);
-
-			const mask = new PIXI.Graphics();
-
-			mask.beginFill(0xff0000);
-			mask.drawRect(0, 0, this._width, this._height);
-			mask.endFill();
-
-			this._app.renderer.render(mask, renderTexture);
-
-			this._app.stage.addChild(renderTextureSprite);
-			spriteBefore.mask = renderTextureSprite;
-
-			this._displayObjects.mask = mask;
-			this._displayObjects.renderTextureSprite = renderTextureSprite;
-
-			// 
 			this._displayObjects.cells = [];
 			const cells = this._displayObjects.cells;
 			for (let row = 0; row < data.row; row++) {
@@ -229,7 +208,7 @@
 				for (let column = 0; column < data.column; column++) {
 
 					// 
-					const text = new PIXI.Text('', this._textStyle);
+					const text = new PIXI.Text('', textStyle);
 
 					text.anchor.set(0.5);
 
@@ -243,8 +222,31 @@
 				}
 			}
 
-			// 
+			// ビフォー画像
+			const textureBefore = PIXI.Texture.from(data.before);
+			const spriteBefore = new PIXI.Sprite(textureBefore);
+
+			const renderTexture = PIXI.RenderTexture.create(this._width, this._height);
+			const renderTextureSprite = new PIXI.Sprite(renderTexture);
+
+			spriteBefore.mask = renderTextureSprite;
+
+			// ビフォー画像マスク描画
+			const mask = new PIXI.Graphics();
+
+			mask.beginFill(0xff0000);
+			mask.drawRect(0, 0, this._width, this._height);
+			mask.endFill();
+
+			this._app.renderer.render(mask, renderTexture);
+
+			// ビフォー画像表示
+			this._app.stage.addChild(renderTextureSprite);
 			this._displayObjects.background.addChild(spriteBefore);
+
+			// 
+			this._displayObjects.mask = mask;
+			this._displayObjects.renderTextureSprite = renderTextureSprite;
 
 		}
 
