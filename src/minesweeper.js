@@ -238,7 +238,7 @@
 			mask.drawRect(0, 0, this._width, this._height);
 			mask.endFill();
 
-			this._app.renderer.render(mask, renderTexture);
+			this._app.renderer.render(mask, renderTexture, false);
 
 			// ビフォー画像表示
 			this._app.stage.addChild(renderTextureSprite);
@@ -320,7 +320,7 @@
 				mask.drawRect(x, y, width, height);
 				mask.endFill();
 
-				this._app.renderer.render(mask, renderTexture);
+				this._app.renderer.render(mask, renderTexture, false);
 
 			}
 		}
