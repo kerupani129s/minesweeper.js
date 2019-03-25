@@ -195,14 +195,56 @@
 			this._textStyle = new PIXI.TextStyle({fontFamily: 'Arial', fontSize: this._cellHeight, fill: 0xe0e0e0});
 
 			// 
+			const textureAfter = PIXI.Texture.from(data.after);
+			const spriteAfter = new PIXI.Sprite(textureAfter);
+
+			this._displayObjects.background.addChild(spriteAfter);
+
+			// 
+			const textureBefore = PIXI.Texture.from(data.before);
+			const spriteBefore = new PIXI.Sprite(textureBefore);
+
+			const renderTexture = PIXI.RenderTexture.create(this._width, this._height);
+			const renderTextureSprite = new PIXI.Sprite(renderTexture);
+
+			const mask = new PIXI.Graphics();
+
+			mask.beginFill(0xff0000);
+			mask.drawRect(0, 0, this._width, this._height);
+			mask.endFill();
+
+			this._app.renderer.render(mask, renderTexture);
+
+			this._app.stage.addChild(renderTextureSprite);
+			spriteBefore.mask = renderTextureSprite;
+
+			this._displayObjects.mask = mask;
+			this._displayObjects.renderTextureSprite = renderTextureSprite;
+
+			// 
 			this._displayObjects.cells = [];
 			const cells = this._displayObjects.cells;
 			for (let row = 0; row < data.row; row++) {
 				cells[row] = [];
 				for (let column = 0; column < data.column; column++) {
-					this._createCell(row, column);
+
+					// 
+					const text = new PIXI.Text('', this._textStyle);
+
+					text.anchor.set(0.5);
+
+					text.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
+
+					this._displayObjects.background.addChild(text);
+
+					// 
+					this._displayObjects.cells[row][column] = {text};
+
 				}
 			}
+
+			// 
+			this._displayObjects.background.addChild(spriteBefore);
 
 		}
 
@@ -246,35 +288,6 @@
 
 		}
 
-		_createCell(row, column) {
-
-			const background = this._displayObjects.background;
-
-			// 
-			const text = new PIXI.Text('', this._textStyle);
-
-			text.anchor.set(0.5);
-
-			text.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
-
-			background.addChild(text);
-
-			// 
-			const cell = new PIXI.Graphics();
-
-			cell.beginFill(0xe0e0e0);
-			cell.drawRect(- this._cellWidth * 0.45, - this._cellHeight * 0.45, this._cellWidth * 0.9, this._cellHeight * 0.9);
-			cell.endFill();
-
-			cell.position.set(this._cellWidth * (column + 0.5), this._cellHeight * (row + 0.5));
-
-			background.addChild(cell);
-
-			// 
-			this._displayObjects.cells[row][column] = {text, cell};
-
-		}
-
 		_updateCell(row, column) {
 
 			const cells = this._displayObjects.cells;
@@ -291,7 +304,23 @@
 
 		_updateCellRevealed(row, column) {
 			const cells = this._displayObjects.cells;
-			cells[row][column].cell.visible = ! this._field.revealed(row, column);
+			if ( this._field.revealed(row, column) ) {
+
+				const mask = this._displayObjects.mask;
+				const renderTexture = this._displayObjects.renderTextureSprite.texture;
+
+				const x = this._cellWidth * column;
+				const y = this._cellHeight * row;
+				const width = this._cellWidth;
+				const height = this._cellHeight;
+
+				mask.beginFill(0x000000);
+				mask.drawRect(x, y, width, height);
+				mask.endFill();
+
+				this._app.renderer.render(mask, renderTexture);
+
+			}
 		}
 
 	};

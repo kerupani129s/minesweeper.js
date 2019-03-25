@@ -13,7 +13,11 @@
     <div id="canvas"></div>
     <script>
 const minesweeper = new Minesweeper(document.getElementById('canvas'));
-minesweeper.setStage({row: 16, column: 16, mine: 40});
+minesweeper.setStage({
+  row: 16, column: 16, mine: 40,
+  before: 'assets/png/01.before.png',
+  after: 'assets/png/01.after.png'
+});
     </script>
   </body>
 </html>
